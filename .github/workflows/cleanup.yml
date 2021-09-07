@@ -1,0 +1,57 @@
+
+    $hCanvas = _GDIPlus_BitmapCreateFromScan0($aCanvas[0], $aCanvas[1])     ;The entire size of the newly widened image
+    $hGfx = _GDIPlus_ImageGetGraphicsContext($hCanvas)
+    _GDIPlus_GraphicsDrawImageRect($hGfx, $hImage, $aCaptPos[0], $aCaptPos[1], $aCaptPos[2], $aCaptPos[3])  ;Draw the captured screen in the proper location for the log
+
+
+;Draw a frame around the control if that option is selected
+    If $hWindow <> "" and $hCtrl <> "" Then
+        If IsArray($aCtrlPos) Then
+            ;If we are not taking a full screen image, then we need to adjust the position of the red rectangle!
+            $aRect[0] -= $iCaptX
+            $aRect[1] -= $iCaptY
+            $hPen = _GDIPlus_PenCreate(0xFFFF0000, 2)                                           ;Create a red pen
+            _GDIPlus_GraphicsDrawRect($hGfx, $aRect[0], $aRect[1], $aRect[2], $aRect[3], $hPen) ;Draw our rectangle around the control
+        EndIf
+    EndIf
+
+;Now to insert some text into the canvas
+    If $sString <> "" Then
+        $hBrush = _GDIPlus_BrushCreateSolid(0xFFFFFF99)
+        $hFormat = _GDIPlus_StringFormatCreate()
+        $hFamily = _GDIPlus_FontFamilyCreate("Arial")
+        $hFont = _GDIPlus_FontCreate($hFamily, 8, 2)
+        $tLayout = _GDIPlus_RectFCreate($aLogPos[0], $aLogPos[1], $aLogPos[2], $aLogPos[3])
+        $aInfo = _GDIPlus_GraphicsMeasureString($hGfx, $sString, $hFont, $tLayout, $hFormat)
+        _GDIPlus_GraphicsDrawStringEx($hGfx, $sString, $hFont, $aInfo[0], $hFormat, $hBrush)
+        _GDIPlus_FontDispose($hFont)
+        _GDIPlus_FontFamilyDispose($hFamily)
+        _GDIPlus_StringFormatDispose($hFormat)
+        _GDIPlus_BrushDispose($hBrush)
+    EndIf
+
+
+    If $sFileName <> "" Then
+        ;Save the image
+        _GDIPlus_ImageSaveToFile($hCanvas, $sFileName)
+        If @error Then
+            ConsoleWrite("Failed to save the updated canvas" & @CRLF)
+            ;Time for cleanup
+            _GDIPlus_ImageDispose($hCanvas)
+            _WinAPI_DeleteObject($hImage)
+            _GDIPlus_Shutdown()
+            Return SetError(1)
+        Else
+            ConsoleWrite("sucessfully saved the updated canvas" & @CRLF)
+            ;Time for cleanup
+            _GDIPlus_ImageDispose($hCanvas)
+            _WinAPI_DeleteObject($hImage)
+            _GDIPlus_Shutdown()
+            Return $sFileName
+        EndIf
+    Else
+        ;Return the handle to the canvas, can I shutdown GDIPlus now?
+        Return $hCanvas
+    EndIf
+
+EndFunc
